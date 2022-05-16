@@ -84,31 +84,36 @@ library(ggplot2)
        , aes(x = reorder(Area, -Points), y = Points, fill = Area)) + 
   geom_bar(stat = "identity") +
   ggtitle("All Demographics") +
-  xlab("Improvement Area") + theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1))}
+  xlab("Improvement Area") + theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1)) +
+  theme(legend.position = "none")}
 
 {ggplot(pivot_longer(data %>% filter(Frequency == "Rarely") %>% summarise_at(19:26, sum, na.rm = TRUE), cols=1:8, names_to = "Area", values_to = "Points")
        , aes(x = reorder(Area, -Points), y = Points, fill = Area)) + 
   geom_bar(stat = "identity") +
   ggtitle("Rarely Demographics") +
-  xlab("Improvement Area") + theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1))}
+  xlab("Improvement Area") + theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1)) +
+  theme(legend.position = "none")}
 
 ggplot(pivot_longer(data %>% filter(Frequency == "Monthly") %>% summarise_at(19:26, sum, na.rm = TRUE), cols=1:8, names_to = "Area", values_to = "Points")
        , aes(x = reorder(Area, -Points), y = Points, fill = Area)) + 
   geom_bar(stat = "identity") +
   ggtitle("Monthly Demographics") +
-  xlab("Improvement Area") + theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1))
+  xlab("Improvement Area") + theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1)) +
+  theme(legend.position = "none")
 
 ggplot(pivot_longer(data %>% filter(Frequency == "Weekly") %>% summarise_at(19:26, sum, na.rm = TRUE), cols=1:8, names_to = "Area", values_to = "Points")
        , aes(x = reorder(Area, -Points), y = Points, fill = Area)) + 
   geom_bar(stat = "identity") +
   ggtitle("Weekly Demographics") +
-  xlab("Improvement Area") + theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1))
+  xlab("Improvement Area") + theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1)) +
+  theme(legend.position = "none")
 
 ggplot(pivot_longer(data %>% filter(Frequency == "Daily") %>% summarise_at(19:26, sum, na.rm = TRUE), cols=1:8, names_to = "Area", values_to = "Points")
        , aes(x = reorder(Area, -Points), y = Points, fill = Area)) + 
   geom_bar(stat = "identity") +
   ggtitle("Daily Demographics") +
-  xlab("Improvement Area") + theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1))
+  xlab("Improvement Area") + theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1)) +
+  theme(legend.position = "none")
 
 ########### Experience
 
