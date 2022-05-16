@@ -39,7 +39,8 @@ library(dplyr)
 library(ggplot2)
 ggplot(data %>% count(countryname), aes(x = reorder(countryname, -n), y = n, fill = countryname)) + 
   geom_bar(stat = "identity") +
-  xlab("Country") + theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1))
+  xlab("Country") + theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1)) +
+  theme(legend.position = "none")
 
 ## Map human-provided countries to iso country names.
 library(countrycode)
