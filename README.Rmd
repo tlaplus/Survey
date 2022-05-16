@@ -1,0 +1,118 @@
+---
+title: "TLA+ Surveys"
+date: "(`r Sys.Date()`)"
+output: 
+  github_document:
+    toc: true
+    toc_depth: 2
+    html_preview: false
+---
+
+[2022 survey](https://docs.google.com/forms/d/1GQnqZgfJKTZgZd-TydtdqT8axvRrTdWH7M87VUt0_Wk/edit?usp=sharing)
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+## Import from csv file exported from Google Forms.
+data <- read.csv(header=TRUE, sep = ",", file = "2022.csv")
+
+## Rename column names 10 and 19 to 26 (https://www.tutorialkart.com/r-tutorial/r-dataframe-change-column-name/).
+colnames(data)[2:4] <- c("Frequency", "Expertise", "Learned")
+colnames(data)[8] <- c("Welcome")
+colnames(data)[10:11] <- c("Country", "Underrepresented")
+IA <- c("Spec2Code", "Doc", "Library", "Performance", "Lang", "CI/CD", "Extensibility", "IDE")
+colnames(data)[19:26] <- IA
+
+#data <- data %>% filter(Welcome == "No") 
+#data <- data %>% filter(Underrepresented == "Yes") 
+
+########### Geography
+
+## Cleanup/Bin country names in column 10: US, USA, Usa, United States, ... (https://www.journaldev.com/43690/sub-and-gsub-function-r).
+data[c(10)] <- lapply(data[c(10)], gsub, pattern = "^US|^United States|^usa|^United States of America|^USA ", replacement = "USA", ignore.case = TRUE)
+data[c(10)] <- lapply(data[c(10)], gsub, pattern = "^USA ", replacement = "USA", ignore.case = TRUE)
+data[c(10)] <- lapply(data[c(10)], gsub, pattern = "^Britain$|^United Kingdom$", replacement = "UK", ignore.case = TRUE)
+data[c(10)] <- lapply(data[c(10)], gsub, pattern = "^india$", replacement = "India", ignore.case = TRUE)
+data[c(10)] <- lapply(data[c(10)], gsub, pattern = "^germany|^Germany ", replacement = "Germany", ignore.case = TRUE)
+data[c(10)] <- lapply(data[c(10)], gsub, pattern = "^Netherlands ", replacement = "Netherlands", ignore.case = TRUE)
+data[c(10)] <- lapply(data[c(10)], gsub, pattern = "^Italy ", replacement = "Italy", ignore.case = TRUE)
+data[c(10)] <- lapply(data[c(10)], gsub, pattern = "^switzerland$", replacement = "Switzerland", ignore.case = TRUE)
+data[c(10)] <- lapply(data[c(10)], gsub, pattern = "^$", replacement = "Unknown", ignore.case = TRUE)
+
+library(dplyr)
+library(ggplot2)
+ggplot(data %>% count(Country), aes(x = reorder(Country, -n), y = n, fill = Country)) + 
+  geom_bar(stat = "identity") +
+  xlab("Country") + theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1))
+
+## Map human-provided countries to iso country names.
+library(countrycode)
+data$iso2c <- countrycode(data$Country, origin = "country.name", destination = "iso2c")
+
+## (https://stackoverflow.com/a/64769847/6291195)
+library(maps)
+world_map <- map_data("world")
+world_map <- subset(world_map, region != "Antarctica")
+## The following line does the trick that iso2c from above works with the map.
+world_map$region <- iso.alpha(world_map$region)
+
+C <- data %>% filter(!is.na(iso2c)) %>% count(iso2c)
+ggplot(data %>% filter(!is.na(iso2c)) %>% count(iso2c)) +
+  geom_map(
+    dat = world_map, map = world_map, aes(map_id = region),
+    fill = "white", color = "#7f7f7f", size = 0.25 ) +
+  geom_map(map = world_map, aes(map_id = iso2c, fill = n), size = 0.25) +
+  scale_fill_gradient(low = "#fff7bc", high = "#cc4c02", name = "Respondants") +
+  expand_limits(x = world_map$long, y = world_map$lat)
+
+########### Improvement Areas
+
+## Remove bogus strings from column 19 to 26 (https://stackoverflow.com/a/56963488/6291195).
+nm1 <- c(19:26) 
+data[nm1] <- lapply(data[nm1], gsub, pattern = " - Most Important", replacement = "")
+data[nm1] <- lapply(data[nm1], gsub, pattern = " - Least Important", replacement = "")
+data[nm1] <- lapply(data[nm1], gsub, pattern = "N/A / I do not use this", replacement = "")
+
+## Convert column 19 to 26 to numeric (https://stackoverflow.com/a/2290107/6291195).
+data[, nm1] <- sapply(data[, nm1], as.numeric)
+
+## Replace all NA with value 6 (to end with 0 after next lapply).
+data[nm1] <- lapply(data[nm1], function(x) replace(x, is.na(x), 6))
+data[nm1] <- lapply(data[nm1], function(x) 6 - x)
+
+library(tidyr)
+library(ggplot2)
+# %>% filter(Frequency == "Rarely") 
+ggplot(pivot_longer(data %>% summarise_at(19:26, sum, na.rm = TRUE), cols=1:8, names_to = "Area", values_to = "Points")
+       , aes(x = reorder(Area, -Points), y = Points, fill = Area)) + 
+  geom_bar(stat = "identity") +
+  xlab("Improvement Area") + theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1))
+
+########### Experience
+
+## Convert semantically ordered categorial/characters into numericals for correlation analysis.
+data$FrequencyNum <- as.numeric(factor(data$Frequency, levels = c("Rarely", "Monthly", "Weekly", "Daily")))
+data$ExpertiseNum <- as.numeric(factor(data$Expertise, levels = c("I can neither read nor write TLA+", "I can write useful specifications for work, but it's a struggle", "I can write simple specifications", "I am productive writing TLA+", "I am an expert")))
+data$LearnedNum <- as.numeric(factor(data$Learned, levels = c("Recently", "Within last 12 months", "Within last 5 years", "Longer than 5 years ago")))
+
+nm2 <- c("FrequencyNum","ExpertiseNum", "LearnedNum")
+data[nm2] <- lapply(data[nm1], function(x) replace(x, is.na(x), 0))
+
+library(ggcorrplot)
+my_data <- data[, nm2]
+p.mat <- cor_pmat(my_data)
+corr <- round(cor(my_data), 3)
+ggcorrplot(corr, p.mat = cor_pmat(my_data),
+           hc.order = TRUE, type = "lower",
+           color = c("#FC4E07", "white", "#00AFBB"),
+           outline.col = "white", lab = TRUE)
+```
+
+#### README.md is generated from README.Rmd on a host with all libraries installed via:
+```shell
+Rscript -e "rmarkdown::render('README.Rmd')"
+```
+### Install required libraries and R packages (on macOS) with:
+```shell
+brew install pandoc r
+Rscript -e "install.packages(c('rmarkdown', 'ggplot2','dplyr', 'here'), repos='http://cran.us.r-project.org')"
+```
