@@ -27,20 +27,17 @@ colnames(data)[19:26] <- IA
 
 ########### Geography
 
-## Cleanup/Bin country names in column 10: US, USA, Usa, United States, ... (https://www.journaldev.com/43690/sub-and-gsub-function-r).
-data[c(10)] <- lapply(data[c(10)], gsub, pattern = "^US|^United States|^usa|^United States of America|^USA ", replacement = "USA", ignore.case = TRUE)
-data[c(10)] <- lapply(data[c(10)], gsub, pattern = "^USA ", replacement = "USA", ignore.case = TRUE)
-data[c(10)] <- lapply(data[c(10)], gsub, pattern = "^Britain$|^United Kingdom$", replacement = "UK", ignore.case = TRUE)
-data[c(10)] <- lapply(data[c(10)], gsub, pattern = "^india$", replacement = "India", ignore.case = TRUE)
-data[c(10)] <- lapply(data[c(10)], gsub, pattern = "^germany|^Germany ", replacement = "Germany", ignore.case = TRUE)
-data[c(10)] <- lapply(data[c(10)], gsub, pattern = "^Netherlands ", replacement = "Netherlands", ignore.case = TRUE)
-data[c(10)] <- lapply(data[c(10)], gsub, pattern = "^Italy ", replacement = "Italy", ignore.case = TRUE)
-data[c(10)] <- lapply(data[c(10)], gsub, pattern = "^switzerland$", replacement = "Switzerland", ignore.case = TRUE)
+## Convert empty/NA into "Unknown" to prevent countrycode from converting it into Namibia.
 data[c(10)] <- lapply(data[c(10)], gsub, pattern = "^$", replacement = "Unknown", ignore.case = TRUE)
+
+## Map human-provided countries to iso country names.
+library(countrycode)
+data$iso2c <- countrycode(data$Country, origin = "country.name", destination = "iso2c")
+data$countryname <- countrycode(data$Country, origin = "country.name", destination = "country.name")
 
 library(dplyr)
 library(ggplot2)
-ggplot(data %>% count(Country), aes(x = reorder(Country, -n), y = n, fill = Country)) + 
+ggplot(data %>% count(countryname), aes(x = reorder(countryname, -n), y = n, fill = countryname)) + 
   geom_bar(stat = "identity") +
   xlab("Country") + theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1))
 
@@ -81,10 +78,35 @@ data[nm1] <- lapply(data[nm1], function(x) 6 - x)
 
 library(tidyr)
 library(ggplot2)
-# %>% filter(Frequency == "Rarely") 
-ggplot(pivot_longer(data %>% summarise_at(19:26, sum, na.rm = TRUE), cols=1:8, names_to = "Area", values_to = "Points")
+
+{ggplot(pivot_longer(data %>% summarise_at(19:26, sum, na.rm = TRUE), cols=1:8, names_to = "Area", values_to = "Points")
        , aes(x = reorder(Area, -Points), y = Points, fill = Area)) + 
   geom_bar(stat = "identity") +
+  ggtitle("All Demographics") +
+  xlab("Improvement Area") + theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1))}
+
+{ggplot(pivot_longer(data %>% filter(Frequency == "Rarely") %>% summarise_at(19:26, sum, na.rm = TRUE), cols=1:8, names_to = "Area", values_to = "Points")
+       , aes(x = reorder(Area, -Points), y = Points, fill = Area)) + 
+  geom_bar(stat = "identity") +
+  ggtitle("Rarely Demographics") +
+  xlab("Improvement Area") + theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1))}
+
+ggplot(pivot_longer(data %>% filter(Frequency == "Monthly") %>% summarise_at(19:26, sum, na.rm = TRUE), cols=1:8, names_to = "Area", values_to = "Points")
+       , aes(x = reorder(Area, -Points), y = Points, fill = Area)) + 
+  geom_bar(stat = "identity") +
+  ggtitle("Monthly Demographics") +
+  xlab("Improvement Area") + theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1))
+
+ggplot(pivot_longer(data %>% filter(Frequency == "Weekly") %>% summarise_at(19:26, sum, na.rm = TRUE), cols=1:8, names_to = "Area", values_to = "Points")
+       , aes(x = reorder(Area, -Points), y = Points, fill = Area)) + 
+  geom_bar(stat = "identity") +
+  ggtitle("Weekly Demographics") +
+  xlab("Improvement Area") + theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1))
+
+ggplot(pivot_longer(data %>% filter(Frequency == "Daily") %>% summarise_at(19:26, sum, na.rm = TRUE), cols=1:8, names_to = "Area", values_to = "Points")
+       , aes(x = reorder(Area, -Points), y = Points, fill = Area)) + 
+  geom_bar(stat = "identity") +
+  ggtitle("Daily Demographics") +
   xlab("Improvement Area") + theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1))
 
 ########### Experience
